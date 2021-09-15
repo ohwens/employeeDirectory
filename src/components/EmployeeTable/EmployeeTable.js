@@ -1,167 +1,79 @@
 import React, { Component } from "react";
-import EmployeeCard from "../EmployeeCard/EmployeeCard"
 import Navbar from "../Navbar/Navbar"
 import API from "../utils/API"
 
 class EmployeeTable extends Component {
-
     state = {
-        aToz: true,
-        ascending: true,
-        employeeListing: [],
-        filteredEmployees: []
-       
-    }
+        search: "",
+        results: [],
+        sort: "desc"
+    };
 
-    
     componentDidMount() {
-        API.randomUser().then(res => {
-            console.log(res.data.results)
-            this.setState(
-                   { employeeListing : res.data.results,
-                    filteredEmployees: res.data.results}
-
-            )
-        })
-        .catch(err => console.log(err));
-        }
-    
-    handleInputSearch = (e) => {
-        console.log(e.target.value)
-        let input = e.target.value
-        let filtered =this.state.employeeListing.filter((employee) => {
-            return employee.name.last.includes(input);
-        })
-
-        this.setState({
-            filteredEmployees: filtered
-        })
-
-
-    }
-
-    sortByName = () => {
-        let sort = [];
-        console.log(this.state.employeeListing)
-        if(this.state.ascending){
-        sort = this.state.employeeListing.sort((a, b) => {
-            let alphaA = a.name.last.toLowerCase();
-            let alphaB = b.name.last.toLowerCase();
-            if(alphaA < alphaB) {
-                return -1
-            } else if (alphaA > alphaB) {
-                return 1 
-            }else {
-                return 0;
-            }
-            
-         }); 
-         
-         this.setState({
-             ascending:false
-         })
-        }
-        else{
-            sort = this.state.employeeListing.sort((a, b) => {
-                let alphaA = a.name.last.toLowerCase();
-                let alphaB = b.name.last.toLowerCase();
-                if(alphaA < alphaB) {
-                    return 1
-                } else if (alphaA > alphaB) {
-                    return -1
-                }else {
-                    return 0;
-                }
-                
-             }); 
-            this.setState({
-                ascending:true
+        console.log('Mount up!')
+        API.randomUser()
+            .then(res => {
+                this.setState({ results: res.data.results })
+                console.log(res.data.results)
             })
-        }
+            .catch(err => console.log(err));
     }
 
-    sortByAge = () => {
-        let sort = [];
-        console.log(this.state.employeeListing)
-        if(this.state.ascending){
-        sort = this.state.employeeListing.sort((a, b) => {
-            let alphaA = a.dob.age;
-            let alphaB = b.dob.age;
-            if(alphaA < alphaB) {
-                return -1
-            } else if (alphaA > alphaB) {
-                return 1 
-            }else {
-                return 0;
-            }
-            
-         }); 
-         
-         this.setState({
-             ascending:false
-         })
-        }
-        else{
-            sort = this.state.employeeListing.sort((a, b) => {
-                let alphaA = a.dob.age;
-                let alphaB = b.dob.age;
-                if(alphaA < alphaB) {
-                    return 1
-                } else if (alphaA > alphaB) {
-                    return -1
-                }else {
-                    return 0;
-                }
-                
-             }); 
-            this.setState({
-                ascending:true
-            })
-        }
-    }
+    handleInputChange = event => {
+        this.setState({ search: event.target.value});
+        console.log(this.state.search)
+    };
+
+searchFilter= item =>  this.state.search ?
+    `${item.name.first}${item.name.last}`.toLowerCase().includes(this.state.search.toLowerCase()):true
+
+sortToggle= () => {
+    this.setState({ sort: this.state.sort == "desc" ? "asc": "desc"});
+    console.log(this.state.sort)
+
+};
+
 
     render() {
+        console.log(this.state.results.filter(item => item.name.first === this.state.search))
+
         return (
             <div>
-            <Navbar handleInputSearch={this.handleInputSearch} />
-            <table className="table">
-                <thead>
-            <tr>
-                    <th scope="col">Photo</th>
-                    <th scope="col"onClick={this.sortByName} className="name">Name </th>
-                    <th scope="col"onClick={this.sortByAge} className="age">Age</th>
-                    <th scope="col">Phone</th>
-                    <th scope="col">E-mail</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {
-                    this.state.filteredEmployees.length > 0 &&
-                    this.state.filteredEmployees.map((item, index) => (
+                <Navbar
+                    handleInputChange={this.handleInputChange}
+                />
 
-                            <EmployeeCard
-                                image={item.picture.medium}
-                                first={item.name.first}
-                                last={item.name.last}
-                                title={item.name.title}
-                                gender={item.gender}
-                                age={item.dob.age}
-                                phone={item.cell}
-                                email={item.email}
-                                key={item.email}
-                            />
-                    ))
-                }
-                </tbody>
-            </table>
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col md-2">Profile Image</th>
+                            <th scope="col md-2">First#</th>
+                            <th scope="col md-2" onClick={this.sortToggle}>Last {this.state.sort === 'desc' ? "▼": "▲"}</th>
+                            <th scope="col md-2">Phone#</th>
+                            <th scope="col md-2">Email</th>
+                            <th scope="col md-2">DOB</th>
+                        </tr>
+                    </thead>
+                    <tbody >
+                        {
+                            this.state.results.filter(this.searchFilter).sort((a,b)=> this.state.sort ==="desc" ? a.name.last.localeCompare(b.name.last): b.name.last.localeCompare(a.name.last)).map(item =>
+                                <tr>
+                                    <td ><img src={item.picture.thumbnail} className="square" alt="thumbnail" /></td>
+                                    <td >{item.name.first}</td>
+                                    <td >{item.name.last}</td>
+                                    <td >{item.phone}</td>
+                                    <td >{item.email}</td>
+                                    <td>{item.dob.date}</td>
+                                </tr>
+                            )
+                        }
+                    </tbody>
+                </table>
             </div>
-        );
+        )
     }
 
 }
 
-
-
-
-export default EmployeeTable
-
+export default EmployeeTable;
